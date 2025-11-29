@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Chat App</title>
+    <style>
+        /* --- RESET & BASICS --- */
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #d1d7db; height: 100vh; height: 100dvh; overflow: hidden; }
+
+        /* --- THEME VARIABLES --- */
+        :root {
+            --primary: #008069;
+            --bg-chat: #efeae2;
+            --white: #ffffff;
+            --gray-light: #f0f2f5;
+            --msg-out: #d9fdd3;
+            --msg-in: #ffffff;
+            --text-main: #111b21;
+            --text-sec: #667781;
+        }
+
+        /* --- LAYOUT CONTAINER --- */
+        #app {
+            width: 100%; height: 100%; max-width: 500px; margin: 0 auto;
+            background: var(--white); display: flex; flex-direction: column; position: relative;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        /* --- UTILS --- */
+        .hidden { display: none !important; }
+        .flex-col { display: flex; flex-direction: column; }
+        .flex-row { display: flex; align-items: center; }
+        .grow { flex: 1; }
+        
+        /* --- LOGIN SCREEN --- */
+        #login-view {
+            height: 100%; flex-direction: column; justify-content: center; align-items: center; padding: 30px;
+            background-color: var(--gray-light);
+        }
+        .logo { font-size: 60px; margin-bottom: 20px; }
+        .input-box {
+            width: 100%; padding: 15px; border-radius: 8px; border: 1px solid #ddd; 
+            margin-bottom: 10px; font-size: 16px; background: white;
+        }
+        .btn {
+            width: 100%; padding: 14px; border-radius: 25px; border: none; 
+            background: var(--primary); color: white; font-size: 16px; font-weight: bold; cursor: pointer;
+        }
+        .btn:active { opacity: 0.8; }
+        .link { margin-top: 15px; color: var(--primary); font-weight: 500; cursor: pointer; }
+
+        /* --- MAIN HEADER --- */
+        .header {
+            height: 60px; background: var(--primary); color: white; padding: 0 15px;
+            display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; z-index: 10;
+        }
+        .header h3 { margin: 0; font-size: 20px; }
+        .icon-btn { font-size: 22px; cursor: pointer; background: none; border: none; color: white; padding: 5px; }
+
+        /* --- TABS --- */
+        .tabs { display: flex; background: var(--primary); color: rgba(255,255,255,0.7); flex-shrink: 0; }
+        .tab { flex: 1; text-align: center; padding: 14px 0; font-weight: bold; font-size: 14px; border-bottom: 3px solid transparent; cursor: pointer; }
+        .tab.active { color: white; border-bottom: 3px solid white; }
+
+        /* --- LISTS --- */
+        .list-area { flex: 1; overflow-y: auto; background: white; }
+        .list-item {
+            display: flex; align-items: center; padding: 12px 15px; border-bottom: 1px solid #f0f0f0; cursor: pointer;
+        }
+        .list-item:active { background: #f5f5f5; }
+        .avatar {
+            width: 45px; height: 45px; border-radius: 50%; background: #eee; 
+            display: flex; align-items: center; justify-content: center; font-size: 22px; margin-right: 15px;
+        }
+        .info { flex: 1; }
+        .name { font-size: 17px; color: var(--text-main); font-weight: 500; }
+        .sub { font-size: 14px; color: var(--text-sec); margin-top: 3px; }
+
+        /* --- CHAT SCREEN --- */
+        #chat-view {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: var(--bg-chat); display: flex; flex-direction: column; z-index: 20;
+        }
+        /* Chat Header */
+        .chat-header {
+            height: 60px; background: var(--primary); display: flex; align-items: center; padding: 0 10px; color: white; flex-shrink: 0;
+        }
+        .back-btn { font-size: 24px; margin-right: 5px; padding: 5px; cursor: pointer; }
+        
+        /* Chat Messages */
+        #msg-container {
+            flex: 1; overflow-y: auto; padding: 10px 15px; display: flex; flex-direction: column; gap: 4px;
+            background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
+            background-size: contain;
+        }
+        .msg {
+            max-width: 75%; padding: 6px 10px; border-radius: 8px; font-size: 15px; position: relative;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.1); word-wrap: break-word; line-height: 1.3;
+        }
+        .msg-in { align-self: flex-start; background: var(--msg-in); border-top-left-radius: 0; }
+        .msg-out { align-self: flex-end; background: var(--msg-out); border-top-right-radius: 0; }
+        .time { font-size: 10px; color: var(--text-sec); text-align: right; margin-top: 2px; }
+
+        /* Chat Input Footer */
+        .chat-footer {
+            min-height: 60px; background: var(--gray-light); padding: 5px 10px; 
+            display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+        }
+        .input-msg {
+            flex: 1; height: 40px; padding: 0 15px; border-radius: 20px; border: none; font-size: 16px; background: white;
+        }
+        .send-btn {
+            width: 45px; height: 45px; background: var(--primary); border-radius: 50%; 
+            color: white; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer;
+        }
+
+        /* --- MODALS --- */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);
+            display: flex; align-items: center; justify-content: center; z-index: 100;
+        }
+        .modal-box { background: white; width: 85%; padding: 20px; border-radius: 10px; text-align: center; }
+        .modal-title { margin-bottom: 15px; font-size: 18px; font-weight: bold; }
+        .btn-red { background: #d32f2f; color: white; padding: 10px 20px; border-radius: 5px; border: none; margin-top: 10px; }
+        .btn-green { background: #008069; color: white; padding: 10px 20px; border-radius: 5px; border: none; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div id="app">
+
+    <!-- === LOGIN SCREEN === -->
+    <div id="login-view" class="flex-col">
+        <div class="logo">💬</div>
+        <h2 style="margin-bottom: 20px; color: #333;">Welcome</h2>
+        
+        <!-- Login Form -->
+        <div id="form-login" style="width:100%">
+            <input type="text" id="log-user" class="input-box" placeholder="Username (e.g. alice)">
+            <input type="password" id="log-pass" class="input-box" placeholder="Password">
+            <button class="btn" onclick="window.chatApp.login()">Login</button>
+            <div class="link" onclick="window.chatApp.toggleAuth(false)">Create Account</div>
+        </div>
+
+        <!-- Register Form -->
+        <div id="form-register" class="hidden" style="width:100%">
+            <input type="text" id="reg-user" class="input-box" placeholder="Username">
+            <input type="password" id="reg-pass" class="input-box" placeholder="Password">
+            <input type="text" id="reg-emoji" class="input-box" placeholder="Emoji (e.g. 😎)" style="text-align:center;">
+            <button class="btn" onclick="window.chatApp.register()">Sign Up</button>
+            <div class="link" onclick="window.chatApp.toggleAuth(true)">Back to Login</div>
+        </div>
+        <p id="auth-error" style="color:red; margin-top:15px; font-size:14px;"></p>
+    </div>
+
+    <!-- === MAIN LIST SCREEN === -->
+    <div id="main-view" class="flex-col hidden" style="height:100%">
+        <div class="header">
+            <h3 id="my-header-title">Chats</h3>
+            <div>
+                <button class="icon-btn" onclick="window.chatApp.showAddFriend()">➕</button>
+                <button class="icon-btn" onclick="window.chatApp.logout()">🚪</button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="window.chatApp.switchTab('chats')">CHATS</div>
+            <div class="tab" onclick="window.chatApp.switchTab('global')">GLOBAL</div>
+            <div class="tab" onclick="window.chatApp.switchTab('req')">REQUESTS</div>
+        </div>
+
+        <div id="list-chats" class="list-area"></div>
+        
+        <div id="list-global" class="list-area hidden">
+            <div class="list-item" onclick="window.chatApp.openChat('global', 'Global Room', '🌍')">
+                <div class="avatar">🌍</div>
+                <div class="info">
+                    <div class="name">Global Chat</div>
+                    <div class="sub">Public room for everyone</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="list-req" class="list-area hidden"></div>
+    </div>
+
+    <!-- === CHAT ROOM === -->
+    <div id="chat-view" class="hidden">
+        <div class="chat-header">
+            <div class="back-btn" onclick="window.chatApp.closeChat()">←</div>
+            <div class="avatar" id="chat-avatar" style="width:35px; height:35px; margin-right:10px; font-size:18px;"></div>
+            <div class="info">
+                <div class="name" id="chat-name" style="color:white; font-size:16px;">Name</div>
+            </div>
+            <button id="btn-call" class="icon-btn" onclick="window.chatApp.startCall()">📞</button>
+        </div>
+        
+        <div id="msg-container"></div>
+        
+        <div class="chat-footer">
+            <input type="text" id="msg-input" class="input-msg" placeholder="Message" onkeydown="window.chatApp.checkEnter(event)">
+            <div class="send-btn" onclick="window.chatApp.sendMessage()">➤</div>
+        </div>
+    </div>
+
+    <!-- === MODALS === -->
+    <!-- Add Friend -->
+    <div id="modal-add" class="modal hidden">
+        <div class="modal-box">
+            <h3 class="modal-title">Add Friend</h3>
+            <p style="margin-bottom:10px; color:#666;">Ask your friend for their 4-digit ID</p>
+            <input type="number" id="input-friend-id" class="input-box" placeholder="Enter ID (e.g. 4832)">
+            <button class="btn" onclick="window.chatApp.sendRequest()">Send Request</button>
+            <button class="btn-red" style="background:transparent; color:#d32f2f; margin-top:5px;" onclick="document.getElementById('modal-add').classList.add('hidden')">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Calling -->
+    <div id="modal-call" class="modal hidden">
+        <div class="modal-box">
+            <div class="avatar" id="call-ui-avatar" style="width:80px; height:80px; font-size:40px; margin:0 auto 15px;"></div>
+            <h3 id="call-ui-status" class="modal-title">Calling...</h3>
+            <div id="call-ui-btns"></div>
+        </div>
+    </div>
+
+</div>
+
+<!-- FIREBASE & LOGIC -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getDatabase, ref, set, get, onValue, push, update, remove, serverTimestamp } 
+    from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyA9yxE49NeUZtki8JnzUozEzrcJCTgJbTg",
+        authDomain: "esport-7a1eb.firebaseapp.com",
+        databaseURL: "https://esport-7a1eb-default-rtdb.firebaseio.com",
+        projectId: "esport-7a1eb",
+        storageBucket: "esport-7a1eb.firebasestorage.app",
+        messagingSenderId: "613393288254",
+        appId: "1:613393288254:web:df603e4fcd81533b8f556f",
+        measurementId: "G-YNV0FZZ6KH"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // --- STATE ---
+    let me = null;
+    let activeChatId = null;
+    let activeChatUser = null;
+    
+    // WebRTC
+    let localStream, pc;
+    let incomingCallId = null;
+
+    // --- APP LOGIC ---
+    const chatApp = {
+        
+        // 1. AUTH
+        toggleAuth: (isLogin) => {
+            document.getElementById('form-login').classList.toggle('hidden', !isLogin);
+            document.getElementById('form-register').classList.toggle('hidden', isLogin);
+            document.getElementById('auth-error').innerText = "";
+        },
+
+        register: async () => {
+            const u = document.getElementById('reg-user').value.toLowerCase().trim();
+            const p = document.getElementById('reg-pass').value;
+            const e = document.getElementById('reg-emoji').value || "🙂";
+            if(!u || !p) return alert("Enter user & pass");
+
+            // Check if exists
+            const s = await get(ref(db, `usernames/${u}`));
+            if(s.exists()) return alert("Username taken");
+
+            // Generate ID
+            const id = Math.floor(1000 + Math.random() * 9000);
+            const uid = "u_" + Date.now();
+
+            await update(ref(db), {
+                [`users/${uid}`]: { username: u, password: p, emoji: e, id: id },
+                [`usernames/${u}`]: uid,
+                [`ids/${id}`]: uid
+            });
+
+            alert(`Registered! Your ID is: ${id}`);
+            chatApp.toggleAuth(true);
+        },
+
+        login: async () => {
+            const u = document.getElementById('log-user').value.toLowerCase().trim();
+            const p = document.getElementById('log-pass').value;
+
+            const s = await get(ref(db, `usernames/${u}`));
+            if(!s.exists()) return document.getElementById('auth-error').innerText = "User not found";
+
+            const uid = s.val();
+            const uSnap = await get(ref(db, `users/${uid}`));
+            const data = uSnap.val();
+
+            if(data.password !== p) return document.getElementById('auth-error').innerText = "Wrong password";
+
+            // Success
+            me = { uid, ...data };
+            document.getElementById('login-view').classList.add('hidden');
+            document.getElementById('main-view').classList.remove('hidden');
+            document.getElementById('my-header-title').innerText = `Chat (${me.id})`;
+            
+            chatApp.initListeners();
+        },
+
+        logout: () => location.reload(),
+
+        // 2. MAIN UI
+        switchTab: (tab) => {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            ['list-chats', 'list-global', 'list-req'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            document.getElementById(`list-${tab}`).classList.remove('hidden');
+        },
+
+        showAddFriend: () => document.getElementById('modal-add').classList.remove('hidden'),
+
+        // 3. FRIENDS
+        sendRequest: async () => {
+            const id = document.getElementById('input-friend-id').value;
+            if(id == me.id) return alert("Self??");
+            
+            const s = await get(ref(db, `ids/${id}`));
+            if(!s.exists()) return alert("ID not found");
+            const targetUid = s.val();
+
+            await set(ref(db, `friend_requests/${targetUid}/${me.uid}`), {
+                name: me.username, emoji: me.emoji, uid: me.uid
+            });
+            
+            alert("Sent!");
+            document.getElementById('modal-add').classList.add('hidden');
+        },
+
+        initListeners: () => {
+            // Requests
+            onValue(ref(db, `friend_requests/${me.uid}`), snap => {
+                const div = document.getElementById('list-req');
+                div.innerHTML = "";
+                if(snap.exists()) {
+                    snap.forEach(c => {
+                        const r = c.val();
+                        div.innerHTML += `
+                        <div class="list-item">
+                            <div class="avatar">${r.emoji}</div>
+                            <div class="info"><div class="name">${r.name}</div><div class="sub">Wants to chat</div></div>
+                            <button class="btn-green" style="margin-right:5px; padding:5px 10px;" onclick="window.chatApp.accept('${r.uid}')">✔</button>
+                        </div>`;
+                    });
+                }
+            });
+
+            // Friends
+            onValue(ref(db, `friends/${me.uid}`), async snap => {
+                const div = document.getElementById('list-chats');
+                div.innerHTML = "";
+                if(snap.exists()) {
+                    const friends = snap.val();
+                    for(const [fid, fdata] of Object.entries(friends)) {
+                        const fs = await get(ref(db, `users/${fid}`));
+                        const f = fs.val();
+                        const el = document.createElement('div');
+                        el.className = "list-item";
+                        el.onclick = () => chatApp.openChat(fid, f.username, f.emoji, fdata.chatId);
+                        el.innerHTML = `
+                            <div class="avatar">${f.emoji}</div>
+                            <div class="info"><div class="name">${f.username}</div><div class="sub">Tap to chat</div></div>
+                        `;
+                        div.appendChild(el);
+                    }
+                }
+            });
+
+            // Incoming Calls
+            onValue(ref(db, `calls/${me.uid}`), snap => {
+                if(snap.exists()) {
+                    const c = snap.val();
+                    if(c.type === 'offer') {
+                        incomingCallId = c.caller;
+                        document.getElementById('modal-call').classList.remove('hidden');
+                        document.getElementById('call-ui-status').innerText = `${c.callerName} calling...`;
+                        document.getElementById('call-ui-btns').innerHTML = `
+                            <button class="btn-green" onclick="window.chatApp.answerCall('${c.sdp}')">Answer</button>
+                            <button class="btn-red" onclick="window.chatApp.rejectCall()">Decline</button>
+                        `;
+                    } else if(c.type === 'answer') {
+                        // Call accepted
+                        const desc = new RTCSessionDescription(JSON.parse(c.sdp));
+                        pc.setRemoteDescription(desc);
+                        document.getElementById('call-ui-status').innerText = "Connected";
+                    }
+                } else {
+                    // Call ended
+                    if(!document.getElementById('modal-call').classList.contains('hidden')) {
+                        chatApp.endCallCleanup();
+                    }
+                }
+            });
+        },
+
+        accept: async (fid) => {
+            const cid = push(ref(db, 'chats')).key;
+            await update(ref(db), {
+                [`friends/${me.uid}/${fid}`]: { chatId: cid },
+                [`friends/${fid}/${me.uid}`]: { chatId: cid },
+                [`friend_requests/${me.uid}/${fid}`]: null
+            });
+        },
+
+        // 4. CHAT
+        openChat: (uid, name, emoji, chatId='global') => {
+            activeChatId = chatId;
+            activeChatUser = { uid, name };
+            
+            document.getElementById('chat-name').innerText = name;
+            document.getElementById('chat-avatar').innerText = emoji;
+            document.getElementById('btn-call').style.display = (uid === 'global') ? 'none' : 'block';
+            
+            document.getElementById('chat-view').classList.remove('hidden');
+            chatApp.loadMessages();
+        },
+
+        closeChat: () => {
+            activeChatId = null;
+            document.getElementById('chat-view').classList.add('hidden');
+        },
+
+        checkEnter: (e) => { if(e.key === "Enter") chatApp.sendMessage(); },
+
+        sendMessage: () => {
+            const input = document.getElementById('msg-input');
+            if(!input.value.trim()) return;
+            
+            push(ref(db, `chats/${activeChatId}/messages`), {
+                s: me.uid, t: input.value, ts: serverTimestamp()
+            });
+            input.value = "";
+            input.focus();
+        },
+
+        loadMessages: () => {
+            const box = document.getElementById('msg-container');
+            box.innerHTML = "";
+            
+            // Unsubscribe old listeners would be better, but simplified here
+            onValue(ref(db, `chats/${activeChatId}/messages`), snap => {
+                box.innerHTML = ""; 
+                if(!snap.exists()) return;
+                
+                const msgs = Object.values(snap.val());
+                msgs.forEach(m => {
+                    const div = document.createElement('div');
+                    div.className = `msg ${m.s === me.uid ? 'msg-out' : 'msg-in'}`;
+                    div.innerHTML = `${m.t} <div class="time">${new Date(m.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>`;
+                    box.appendChild(div);
+                });
+                box.scrollTop = box.scrollHeight;
+            });
+        },
+
+        // 5. CALLING (WebRTC)
+        startCall: async () => {
+            incomingCallId = activeChatUser.uid; // Target
+            document.getElementById('modal-call').classList.remove('hidden');
+            document.getElementById('call-ui-status').innerText = "Calling...";
+            document.getElementById('call-ui-btns').innerHTML = `<button class="btn-red" onclick="window.chatApp.rejectCall()">Cancel</button>`;
+
+            pc = new RTCPeerConnection({ iceServers: [{urls:'stun:stun.l.google.com:19302'}] });
+            localStream = await navigator.mediaDevices.getUserMedia({audio:true});
+            localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+
+            pc.onicecandidate = e => {
+                if(e.candidate) push(ref(db, `calls/${incomingCallId}/ice`), JSON.stringify(e.candidate));
+            };
+            pc.ontrack = e => {
+                const aud = new Audio();
+                aud.srcObject = e.streams[0];
+                aud.play();
+            };
+
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+
+            set(ref(db, `calls/${incomingCallId}`), {
+                caller: me.uid, callerName: me.username, type: 'offer', sdp: JSON.stringify(offer)
+            });
+
+            // Listen for answer candidates
+            onValue(ref(db, `calls/${me.uid}/ice`), s => {
+                if(s.exists()) s.forEach(c => pc.addIceCandidate(JSON.parse(c.val())));
+            });
+        },
+
+        answerCall: async (sdp) => {
+            pc = new RTCPeerConnection({ iceServers: [{urls:'stun:stun.l.google.com:19302'}] });
+            localStream = await navigator.mediaDevices.getUserMedia({audio:true});
+            localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+
+            pc.onicecandidate = e => {
+                if(e.candidate) push(ref(db, `calls/${incomingCallId}/ice`), JSON.stringify(e.candidate));
+            };
+            pc.ontrack = e => {
+                const aud = new Audio();
+                aud.srcObject = e.streams[0];
+                aud.play();
+            };
+
+            await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sdp)));
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+
+            // Send answer back to Caller (who is listening to their own node? No, standard pattern: write to their node or update ours)
+            // Simplified: The caller is listening to `calls/CallerID`? No, Caller pushed to `calls/CalleeID`.
+            // So Callee updates `calls/CallerID`? 
+            // In this simple model: We update the node where the offer came from OR better:
+            
+            // FIX: Caller put data in `calls/CalleeID`.
+            // Callee (Me) updates `calls/CalleeID` with Answer. Caller listens to `calls/CalleeID`? 
+            // No, Caller should listen to `calls/CallerID`?
+            
+            // Let's stick to the working logic:
+            // 1. A calls B -> writes to `calls/B`.
+            // 2. B answers -> writes to `calls/A`. (Since A is listening to `calls/A` for answers?)
+            // Actually, in `initListeners`, we listen to `calls/{me.uid}`.
+            // So if B writes to `calls/A`, A will get it.
+            
+            set(ref(db, `calls/${incomingCallId}`), {
+                type: 'answer', sdp: JSON.stringify(answer)
+            });
+
+            // Listen for ICE from caller
+            onValue(ref(db, `calls/${me.uid}/ice`), s => {
+                if(s.exists()) s.forEach(c => pc.addIceCandidate(JSON.parse(c.val())));
+            });
+            
+            document.getElementById('call-ui-btns').innerHTML = `<button class="btn-red" onclick="window.chatApp.rejectCall()">End</button>`;
+        },
+
+        rejectCall: () => {
+            remove(ref(db, `calls/${me.uid}`)); // Remove my node
+            if(incomingCallId) remove(ref(db, `calls/${incomingCallId}`)); // Remove other node
+            chatApp.endCallCleanup();
+        },
+
+        endCallCleanup: () => {
+            if(pc) pc.close();
+            if(localStream) localStream.getTracks().forEach(t => t.stop());
+            document.getElementById('modal-call').classList.add('hidden');
+        }
+    };
+
+    // Expose to window for HTML events
+    window.chatApp = chatApp;
+</script>
+</body>
+</html>
